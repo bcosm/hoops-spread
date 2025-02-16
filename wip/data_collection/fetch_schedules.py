@@ -14,7 +14,7 @@ EXCEL_FILENAME_PATTERN = "ncaa-basketball-{start_year_full}-{end_year_short}.xls
 OLDEST_SEASON_END_YEAR = 2008
 NEWEST_SEASON_END_YEAR = 2022
 OUTPUT_DIR = os.path.join("data", "raw")
-OUTPUT_FILE = "data/raw/schedules_temp.csv"
+OUTPUT_FILE = "data/raw/sbr_schedules.csv"
 REQUEST_DELAY_SECONDS = 2.5
 
 HEADERS = {
