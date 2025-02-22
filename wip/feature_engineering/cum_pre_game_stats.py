@@ -3,6 +3,7 @@ import os
 import numpy as np
 import json
 import re
+import pandas as pd
 
 INPUT_CSV = os.path.join("data", "processed", "sbr_elo_bart_arena_direct_merge.csv")
 SCHOOL_CODE_JSON = os.path.join("data", "processed_with_school_codes", "llm_school_name_to_code.json")
