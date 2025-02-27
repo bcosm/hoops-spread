@@ -90,7 +90,7 @@ def main():
     db = duckdb.connect(DUCKDB_FILE)
     init_db(db)
 
-    pat = re.compile(r"^(RS|RC)_(\d{4})-(\d{1})\.zst$", re.I)
+    pat = re.compile(r"^(RS|RC)_(\d{4})-(\d{2})\.zst$", re.I)
     archives = [p for p in ROOT.rglob("*.zst") if pat.match(p.name)]
     archives.sort()
 
