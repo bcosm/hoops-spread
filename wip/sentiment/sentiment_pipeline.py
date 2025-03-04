@@ -30,10 +30,6 @@ def run_sentiment_pipeline():
     
     return True
 
-def analyze_sentiment():
-    # TODO: implement
-    pass
-
 if __name__ == "__main__":
     success = run_sentiment_pipeline()
     sys.exit(0 if success else 1)
