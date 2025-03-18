@@ -18,16 +18,20 @@ def run_modeling_pipeline():
             print(f"Script {script} not found")
             return False
             
-        result = subprocess.run([sys.executable, str(script_path)], 
-                                cwd=str(Path.cwd()),
-                                capture_output=False, text=True)
-        if result.returncode != 0:
-            config_dir = Path("config")
-            success_signal = config_dir / "boruta_success_signal.txt"
-            early_success = config_dir / "boruta_early_success.txt"
-            
-            if not (success_signal.exists() or early_success.exists()):
-                return False
+        try:
+            result = subprocess.run([sys.executable, str(script_path)], 
+                                  cwd=str(Path.cwd()),
+                                  capture_output=False, text=True)
+            if result.returncode != 0:
+                config_dir = Path("config")
+                success_signal = config_dir / "boruta_success_signal.txt"
+                early_success = config_dir / "boruta_early_success.txt"
+                
+                if not (success_signal.exists() or early_success.exists()):
+                    return False
+        except Exception as e:
+            print(f"Error running {script}: {e}")
+            return False
     
     return True
 
