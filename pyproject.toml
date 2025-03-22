@@ -1,1 +1,100 @@
-<COPY pyproject.toml WITHOUT CLI ENTRY POINT>
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hoops-spread"
+version = "1.0.0"
+description = "College basketball spread prediction using advanced analytics and sentiment analysis"
+readme = "README.md"
+requires-python = "~=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "NCAA Basketball Prediction Team", email = "bcosm@umich.edu"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["machine-learning", "sports-betting", "basketball", "sentiment-analysis", "xgboost"]
+
+dependencies = [
+    "pandas>=2.0.0",
+    "numpy>=1.21.0",
+    "pyarrow>=12.0.0",
+    "scikit-learn~=1.3.0",
+    "xgboost>=1.7.0",
+    "joblib>=1.2.0",
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "urllib3>=2.0.0",
+    "duckdb>=0.8.0",
+    "tqdm>=4.65.0",
+    "python-dotenv>=1.0.0",
+    "rapidfuzz>=3.0.0",
+    "geopy>=2.3.0",
+    "psutil>=5.9.0",
+    "shap>=0.42.0",
+    "optuna>=3.0.0",
+    "hyperopt>=0.2.7",
+    "BorutaShap",
+    "scipy<1.12.0",
+    "pyzstd",
+]
+
+[project.optional-dependencies]
+notebook = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.15.0",
+]
+gpu = ["torch"]
+
+[project.urls]
+Homepage = "https://github.com/bcosm/hoops-spread"
+
+[project.scripts]
+hoops-spread = "hoops_spread.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+hoops_spread = ["config/*.json", "config/*.txt"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | archive
+)/
+'''
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
