@@ -1,3 +1,5 @@
+[![CI](https://github.com/bcosm/hoops-spread/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bcosm/hoops-spread/actions/workflows/ci.yml)
+
 # hoops-spread
 
 > End-to-end NCAA point-spread modeling built on XGBoost.
