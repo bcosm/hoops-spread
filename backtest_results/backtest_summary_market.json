@@ -1,0 +1,14 @@
+{
+  "model_type": "market",
+  "overall_roi": 0.025951111591473633,
+  "hit_rate": 0.5577889447236181,
+  "n_bets": 2587,
+  "max_drawdown": 0.7543755038794586,
+  "edge_threshold": 0.04,
+  "use_kelly": true,
+  "staking_method": "Half-Kelly",
+  "bootstrap_roi_ci_lower": 0.023069300642558136,
+  "bootstrap_roi_ci_upper": 0.028578456802014512,
+  "bootstrap_roi_mean": 0.025955091003324937,
+  "bootstrap_roi_std": 0.0013744504934444322
+}
