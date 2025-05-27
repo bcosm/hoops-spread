@@ -42,9 +42,12 @@ dependencies = [
     "optuna>=3.0.0",
     "hyperopt>=0.2.7",
     "BorutaShap",
-    "scipy<1.12.0",
+    "scipy>=1.11.0",
     "pyzstd",
 ]
+
+[project.scripts]
+hoops-spread = "hoops_spread.cli:main"
 
 [project.optional-dependencies]
 notebook = [
@@ -55,9 +58,6 @@ gpu = ["torch"]
 
 [project.urls]
 Homepage = "https://github.com/bcosm/hoops-spread"
-
-[project.scripts]
-hoops-spread = "hoops_spread.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -97,4 +97,3 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-
