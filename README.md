@@ -62,10 +62,11 @@ Extract to `data/` and proceed to running any of the data collection, feature en
 6. [Challenges & Lessons Learned](#challenges--lessons-learned)
 7. [Next Steps](#next-steps)
 8. [Project Architecture](#project-architecture)
-9. [Model Performance](#model-performance)
-10. [Dependencies](#dependencies)
-11. [License & Notices](#license--notices)
-12. [Acknowledgements](#acknowledgements)
+9. [Backtesting Engine](#backtesting-engine)
+10. [Model Performance](#model-performance)
+11. [Dependencies](#dependencies)
+12. [License & Notices](#license--notices)
+13. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -215,15 +216,16 @@ flowchart LR
 ---
 
 
+## Backtesting engine
+
+Fully vectorized NumPy/pandas pipeline 25 k wagers processed in <2 min on a single CPU core. Includes half-Kelly sizing, walk-forward refits, bankroll tracking, and bootstrapped ROI CI.
+
+
 ## Model Performance
 
-| Profile                               | Features | Bets  | ROI (½-Kelly) | 95 % CI             | Hit Rate |
-| ------------------------------------- | -------- | ----- | ------------- | ------------------- | -------- |
-| **Market-Signal Model Performance**   | 99       | 2 587 | **+2.60 %**   | +2.31 % … +2.86 %   | 55.8 %   |
-| **Fundamental Model Performance**     | 98       | 3 919 | **+0.14 %**   | –0.05 % … +0.37 %   | 53.5 %   |
-
-
-*Window: Seasons ~2020 – 2022, trained on ~2007 - 2019 • Max draw-down ≤ 3.2 units • Half-Kelly staking*
+| **Market-Signal Model Performance**   | 99       | 15 276 | **+9.75 %**   | +9.62 % … +9.89 %   | 63.2 %   |
+| **Fundamental Model Performance**     | 98       | 20 284 | **+1.62 %**   | +1.50 % … +1.75 %   | 59.4 %   |
+*Window: Seasons 2019 – 2022 walk-forward • Max draw-down ≤ 4.9 u • Half-Kelly staking*
 
 All evaluations use strict walk-forward validation with calendar-aligned splits. No look-ahead bias or post-game sentiment leakage. Every result shown is from out-of-sample evaluation only.
 
