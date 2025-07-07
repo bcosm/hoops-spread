@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd, numpy as np, joblib
 from scipy.stats import norm
 from tqdm import tqdm
-from xgboost import XGBClassifier       # walk-forward refits need a fresh model
+from xgboost import XGBClassifier     
 from collections import defaultdict
 import sys
 import traceback
@@ -12,7 +12,7 @@ import traceback
 # Run backtest simulation with betting strategy and performance metrics
 def main():
     try:
-        MARKET = False
+        MARKET = True
         DATA = Path("data/features/ncaab_cumulative_features_v13_sentiment_enhanced.csv")
         
         model_suffix = "market" if MARKET else "fundamental"
@@ -50,24 +50,10 @@ def main():
         DEC_ODDS = 1.909
         BOOTSTRAPS = 500
 
-        # bankroll / risk accounting
-        BANKROLL_START = 100.0     # units
-        # Sharpe will be annualised later with realised bet-day frequency
+        BANKROLL_START = 100.0  
         
         def implied_cover_prob(edge):
             return norm.cdf(edge / SIGMA_MARGIN)
-
-        def stake_size(edge_prob):
-            if not USE_KELLY:
-                return 1.0
-            return 1.0
-
-        def profit(row):
-            if row.signal == 0 or row.stake == 0:
-                return 0.0
-            visitor_cover = (row.Actual_Margin + row.market_spread) > 0
-            win = visitor_cover if row.signal == 1 else not visitor_cover
-            return row.stake * (DEC_ODDS - 1) if win else -row.stake
 
         if not DATA.exists():
             print(f"ERROR: Data file not found at {DATA}")
@@ -84,9 +70,8 @@ def main():
             print(f"ERROR: Missing required columns in data: {missing_cols}")
             return False
 
-        # ---- expanding walk-forward evaluation -------------------------------
-        HORIZON  = pd.Timedelta(days=30)     # forecast window
-        MIN_TRAIN = pd.Timedelta(days=365)    # warm-up length
+        HORIZON  = pd.Timedelta(days=30)   
+        MIN_TRAIN = pd.Timedelta(days=365)    
 
         target = ((df["Actual_Margin"] + df["open_visitor_spread"]) > 0).astype(int)
         walk_chunks = []
@@ -118,36 +103,31 @@ def main():
         test["signal"] = np.where(test.edge_prob >= EDGE_THRESHOLD, 1,
                               np.where(test.edge_prob <= -EDGE_THRESHOLD, -1, 0))
 
-        # Closing-line value (positive = beat the close)
         test["clv"] = (
             test["open_visitor_spread"] - test["close_visitor_spread"]
         ) * test["signal"]
 
         if USE_KELLY:
             b = DEC_ODDS - 1
-            def kelly_stake(row):
-                if row.signal == 0:
-                    return 0.0
-                elif row.signal == 1:
-                    p = row.cover_prob
-                    f = (b * p - (1 - p)) / b
-                    return max(0, 0.5 * f)
-                else:
-                    p = 1 - row.cover_prob
-                    f = (b * p - (1 - p)) / b
-                    return max(0, 0.5 * f)
-            
-            test["stake"] = test.apply(kelly_stake, axis=1)
+            p = test['cover_prob']
+            long_f  = (b * p - (1 - p)) / b          
+            short_f = (b * (1 - p) - p) / b       
+            stake = np.zeros(len(test))
+            mask_long  = test['signal'] == 1
+            mask_short = test['signal'] == -1
+            stake[mask_long]  = np.maximum(0, 0.5 * long_f[mask_long])
+            stake[mask_short] = np.maximum(0, 0.5 * short_f[mask_short])
+            test['stake'] = stake
         else:
             test["stake"] = test.signal.abs().astype(float)
 
-        tqdm.pandas(desc="Calculating P&L")
-        test["pl"] = test.progress_apply(profit, axis=1)
+        visitor_cover = (test['Actual_Margin'] + test['market_spread']) > 0
+        win = (visitor_cover & (test['signal'] == 1)) | (~visitor_cover & (test['signal'] == -1))
+        test['pl'] = np.where(win, test['stake'] * (DEC_ODDS - 1), -test['stake'])
 
         bets = test[test.stake > 0].copy()
         mean_clv = bets["clv"].mean() if not bets.empty else 0.0
 
-        # bankroll path for turnover / CAGR / daily-Sharpe
         bets["cum_pl"] = bets["pl"].cumsum()
         bets["bankroll"] = BANKROLL_START + bets["cum_pl"]
 
@@ -169,7 +149,6 @@ def main():
             pl    = ('pl',    'sum'),
             stake = ('stake', 'sum')
         )
-        # keep only days with at least one wager
         daily = daily[daily['stake'] > 0]
 
         daily['bankroll'] = BANKROLL_START + daily['pl'].cumsum().shift(fill_value=0)
@@ -182,7 +161,6 @@ def main():
         sharpe = (daily_ret.mean() / daily_ret.std(ddof=0) *
                   np.sqrt(bet_day_freq)) if daily_ret.std(ddof=0) > 0 else 0.0
 
-        # bankroll CAGR & turnover
         period_years = ((bets["date"].iloc[-1] - bets["date"].iloc[0]).days /
                         365.25) if n_bet else 0
         final_bankroll = BANKROLL_START + bets["pl"].sum()
