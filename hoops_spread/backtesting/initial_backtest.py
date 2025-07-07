@@ -1,10 +1,10 @@
-
 # Initial backtesting script for NCAA basketball spread models
 
 from pathlib import Path
 import pandas as pd, numpy as np, joblib
 from scipy.stats import norm
 from tqdm import tqdm
+from xgboost import XGBClassifier       # walk-forward refits need a fresh model
 from collections import defaultdict
 import sys
 import traceback
@@ -49,6 +49,10 @@ def main():
         SIGMA_MARGIN = 1.33
         DEC_ODDS = 1.909
         BOOTSTRAPS = 500
+
+        # bankroll / risk accounting
+        BANKROLL_START = 100.0     # units
+        # Sharpe will be annualised later with realised bet-day frequency
         
         def implied_cover_prob(edge):
             return norm.cdf(edge / SIGMA_MARGIN)
@@ -71,25 +75,53 @@ def main():
             
         df = pd.read_csv(DATA, parse_dates=["date"], low_memory=False).sort_values("date")
 
-        required_cols = ["date", "Actual_Margin", "open_visitor_spread"] + FEATS
+        required_cols = ["date",
+                         "Actual_Margin",
+                         "open_visitor_spread",
+                         "close_visitor_spread"] + FEATS
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
             print(f"ERROR: Missing required columns in data: {missing_cols}")
             return False
 
-        cut = int(len(df) * 0.80)
-        test = df.iloc[cut:].copy()
-        
-        X_test = test[FEATS]
+        # ---- expanding walk-forward evaluation -------------------------------
+        HORIZON  = pd.Timedelta(days=30)     # forecast window
+        MIN_TRAIN = pd.Timedelta(days=365)    # warm-up length
+
+        target = ((df["Actual_Margin"] + df["open_visitor_spread"]) > 0).astype(int)
+        walk_chunks = []
+        cut_date = df["date"].min() + MIN_TRAIN
+
+        while cut_date + HORIZON <= df["date"].max():
+            train_mask = df["date"] <= cut_date
+            test_mask  = (df["date"] > cut_date) & (df["date"] <= cut_date + HORIZON)
+            if not test_mask.any():
+                cut_date += HORIZON
+                continue
+
+            refit = XGBClassifier(**MODEL.get_params())
+            refit.set_params(device="cpu")
+            refit.fit(df.loc[train_mask, FEATS], target[train_mask])
+
+            tmp = df.loc[test_mask].copy()
+            tmp["cover_prob"] = refit.predict_proba(tmp[FEATS])[:, 1]
+            walk_chunks.append(tmp)
+
+            cut_date += HORIZON
+
+        test = pd.concat(walk_chunks).sort_values("date").reset_index(drop=True)
         vig = (DEC_ODDS - 1)
-        MODEL.set_params(device="cpu")
-        test["cover_prob"] = MODEL.predict_proba(X_test)[:, 1]        
         test["market_spread"] = test["open_visitor_spread"]
         p_break = 1 / (1 + (DEC_ODDS - 1))
         test["edge_prob"] = test.cover_prob - p_break
 
         test["signal"] = np.where(test.edge_prob >= EDGE_THRESHOLD, 1,
-                           np.where(test.edge_prob <= -EDGE_THRESHOLD, -1, 0))
+                              np.where(test.edge_prob <= -EDGE_THRESHOLD, -1, 0))
+
+        # Closing-line value (positive = beat the close)
+        test["clv"] = (
+            test["open_visitor_spread"] - test["close_visitor_spread"]
+        ) * test["signal"]
 
         if USE_KELLY:
             b = DEC_ODDS - 1
@@ -113,6 +145,11 @@ def main():
         test["pl"] = test.progress_apply(profit, axis=1)
 
         bets = test[test.stake > 0].copy()
+        mean_clv = bets["clv"].mean() if not bets.empty else 0.0
+
+        # bankroll path for turnover / CAGR / daily-Sharpe
+        bets["cum_pl"] = bets["pl"].cumsum()
+        bets["bankroll"] = BANKROLL_START + bets["cum_pl"]
 
         if USE_KELLY and not bets.empty:
             mean_stake = bets['stake'].mean()
@@ -128,7 +165,33 @@ def main():
             roi = 0.0
             draw = 0.0
 
-        print(f"Bets: {n_bet} | Hit rate: {hit:.3%} | ROI: {roi:.3%} | Max drawdown: {draw:.1f}u")
+        daily = bets.groupby(bets["date"].dt.normalize()).agg(
+            pl    = ('pl',    'sum'),
+            stake = ('stake', 'sum')
+        )
+        # keep only days with at least one wager
+        daily = daily[daily['stake'] > 0]
+
+        daily['bankroll'] = BANKROLL_START + daily['pl'].cumsum().shift(fill_value=0)
+        daily_ret = daily['pl'] / daily['bankroll']
+
+        period_years = ((bets['date'].iloc[-1] - bets['date'].iloc[0]).days
+                        / 365.25) if n_bet else 0
+        bet_day_freq = len(daily_ret) / period_years if period_years > 0 else 0
+
+        sharpe = (daily_ret.mean() / daily_ret.std(ddof=0) *
+                  np.sqrt(bet_day_freq)) if daily_ret.std(ddof=0) > 0 else 0.0
+
+        # bankroll CAGR & turnover
+        period_years = ((bets["date"].iloc[-1] - bets["date"].iloc[0]).days /
+                        365.25) if n_bet else 0
+        final_bankroll = BANKROLL_START + bets["pl"].sum()
+        cagr = ((final_bankroll / BANKROLL_START) ** (1 / period_years) - 1) if period_years > 0 else 0.0
+        turnover = bets["stake"].sum() / BANKROLL_START / period_years if period_years > 0 else 0.0
+        print(f"Bets: {n_bet} | Hit {hit:.3%} | Bet-ROI {roi:.3%} | "
+              f"CAGR {cagr:.3%} | Turnover {turnover:.1f}× | "
+              f"CLV {mean_clv:+.2f} | Sharpe {sharpe:.2f} | "
+              f"Max DD {draw:.1f}u")
 
         if n_bet > 0:
             bets_with_edge = bets.copy()
@@ -136,27 +199,27 @@ def main():
                                                    bins=[-1, -0.05, -0.03, 0.03, 0.05, 1], 
                                                    labels=['<-5%', '-5% to -3%', '±3%', '3% to 5%', '>5%'])
             
-            edge_analysis = bets_with_edge.groupby('edge_bucket').agg({
+            edge_analysis = bets_with_edge.groupby('edge_bucket', observed=False).agg({
                 'pl': ['count', 'sum', 'mean'],
                 'stake': 'sum'
             }).round(3)
             
             edge_analysis.columns = ['Bets', 'Total_PL', 'Avg_PL', 'Total_Stakes']
             edge_analysis['ROI'] = (edge_analysis['Total_PL'] / edge_analysis['Total_Stakes']).round(4)
-            edge_analysis['Hit_Rate'] = bets_with_edge.groupby('edge_bucket')['pl'].apply(lambda x: (x > 0).mean()).round(4)
+            edge_analysis['Hit_Rate'] = bets_with_edge.groupby('edge_bucket', observed=False)['pl'].apply(lambda x: (x > 0).mean()).round(4)
             
             print(edge_analysis)
 
         if n_bet > 0:
             bets_yearly = bets.copy()
             bets_yearly['year'] = bets_yearly['date'].dt.year
-            yearly_stats = bets_yearly.groupby('year').agg({
+            yearly_stats = bets_yearly.groupby('year', observed=False).agg({
                 'pl': ['count', 'sum'],
                 'stake': 'sum'
             })
             yearly_stats.columns = ['Bets', 'Total_PL', 'Total_Stakes']
             yearly_stats['ROI'] = (yearly_stats['Total_PL'] / yearly_stats['Total_Stakes']).round(4)
-            yearly_stats['Hit_Rate'] = bets_yearly.groupby('year')['pl'].apply(lambda x: (x > 0).mean()).round(4)
+            yearly_stats['Hit_Rate'] = bets_yearly.groupby('year', observed=False)['pl'].apply(lambda x: (x > 0).mean()).round(4)
             
             print(yearly_stats)
 
@@ -177,6 +240,7 @@ def main():
         try:
             import shap
             
+            X_test = test[FEATS]
             sample_size = min(1000, len(X_test))
             X_sample = X_test.sample(n=sample_size, random_state=42)
             
@@ -227,7 +291,11 @@ def main():
             "max_drawdown": float(draw),
             "edge_threshold": EDGE_THRESHOLD,
             "use_kelly": USE_KELLY,
-            "staking_method": "Half-Kelly" if USE_KELLY else "Flat 1u"
+            "staking_method": "Half-Kelly" if USE_KELLY else "Flat 1u",
+            "mean_clv": float(mean_clv),
+            "sharpe": float(sharpe),
+            "cagr": float(cagr),
+            "turnover": float(turnover)
         }
         
         if n_bet > 50:
@@ -243,7 +311,9 @@ def main():
             json.dump(results_summary, f, indent=2)
         
         if n_bet > 0:
-            bets_output = bets[['date', 'signal', 'edge_prob', 'cover_prob', 'stake', 'pl']].copy()
+            bets_output = bets[['date', 'signal', 'edge_prob',
+                                'cover_prob', 'stake', 'pl',
+                                'clv', 'bankroll']].copy()
             bets_output.to_csv(results_dir / f"bet_history_{model_suffix}.csv", index=False)
         
         return True

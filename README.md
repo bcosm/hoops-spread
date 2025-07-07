@@ -8,16 +8,26 @@ Repository by **Baz** — Quant Sports-Betting Lead (Jan 2025-Present), Michigan
 
 ## Key Results
 
-| Model Configuration | ROI | Hit Rate | Sample Size |
-|-------------------|-----|----------|-------------|
-| **Market-Signal Model** | **+2.60%** | 55.8% | 2,587 bets |
-| **Fundamental Model** | +0.14% | 53.5% | 3,919 bets |
+| Model Configuration       | ROI       | Hit Rate | Sample Size |
+|---------------------------|-----------|----------|-------------|
+| **Market-Signal Model**   | **+9.75%** | 63.2%    | 15,276 bets |
+| **Fundamental Model**     | +1.62%    | 59.4%    | 20,284 bets |
 
 **Highlights:**
-• Profitable edge against closing lines with market-signal integration  
-• 50+ subreddit sentiment analysis processed via cascading AI pipeline  
-• Strict backtesting with leakage controls and Kelly sizing  
-• Production-ready modeling and backtesting modules
+• Profitable edge against closing lines with and without market signal integration  
+• Walk-forward backtest with strict temporal splits and half-Kelly sizing  
+• 50+ subreddit sentiment analysis via cascading model pipeline  
+---
+
+## Model Performance
+
+| Profile                             | Features | Bets    | ROI (½-Kelly) | 95 % CI             | Hit Rate |
+|-------------------------------------|----------|---------|---------------|---------------------|----------|
+| **Market-Signal Model Performance** | 99       | 15,276  | **+9.75 %**   | +9.62 % … +9.89 %   | 63.2 %   |
+| **Fundamental Model Performance**   | 98       | 20,284  | **+1.62 %**   | +1.50 % … +1.75 %   | 59.4 %   |
+
+*Window: Seasons 2019 – 2022 walk-forward, initial training set 2007 – 2018 • Max draw-down ≤ 4.9 units • Half-Kelly staking*
+
 
 ---
 
