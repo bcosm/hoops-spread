@@ -14,10 +14,10 @@ Repository by **Baz** — Quant Sports-Betting Lead (Jan 2025-Present), Michigan
 | **Market-Signal Model**   | **+9.75%** | 63.2%    | 15,276 bets |
 | **Fundamental Model**     | +1.62%    | 59.4%    | 20,284 bets |
 
-**Highlights:**
-• Profitable edge against closing lines with and without market signal integration  
-• Walk-forward backtest with strict temporal splits and half-Kelly sizing  
-• 50+ subreddit sentiment analysis via cascading model pipeline  
+**Highlights:**  
+- Profitable edge against closing lines with and without market signal integration  
+- Walk-forward backtest with strict temporal splits and half-Kelly sizing  
+- 50+ subreddit sentiment analysis via cascading model pipeline
 ---
 
 ## Model Performance
