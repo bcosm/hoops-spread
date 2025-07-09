@@ -1,6 +1,7 @@
 [![CI](https://github.com/bcosm/hoops-spread/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bcosm/hoops-spread/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+# NCAA Basketball Point-Spread Prediction Pipeline
 > End-to-end NCAA point-spread modeling and backtesting built on XGBoost and multi-model sentiment analysis.
 
 Repository by **Baz** — Quant Sports-Betting Lead (Jan 2025-Present), Michigan Finance and Math Society (MFAMS).*
