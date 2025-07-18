@@ -14,20 +14,10 @@ Repository by **Baz** — Quant Sports-Betting Lead (Jan 2025-Present), Michigan
 | **Market-Signal Model**   | **+9.75%** | 63.2%    | 15,276 bets |
 | **Fundamental Model**     | +1.62%    | 59.4%    | 20,284 bets |
 
-**Highlights:**  
-- Profitable edge against closing lines with and without market signal integration  
-- Walk-forward backtest with strict temporal splits and half-Kelly sizing  
-- 50+ subreddit sentiment analysis via cascading model pipeline
----
-
-## Model Performance
-
-| Profile                             | Features | Bets    | ROI (½-Kelly) | 95 % CI             | Hit Rate |
-|-------------------------------------|----------|---------|---------------|---------------------|----------|
-| **Market-Signal Model Performance** | 99       | 15,276  | **+9.75 %**   | +9.62 % … +9.89 %   | 63.2 %   |
-| **Fundamental Model Performance**   | 98       | 20,284  | **+1.62 %**   | +1.50 % … +1.75 %   | 59.4 %   |
-
-*Window: Seasons 2019 – 2022 walk-forward, initial training set 2007 – 2018 • Max draw-down ≤ 4.9 units • Half-Kelly staking*
+**Highlights:**
+• Profitable edge against closing lines with and without market signal integration  
+• Walk-forward backtest with strict temporal splits and half-Kelly sizing  
+• 50+ subreddit sentiment analysis via cascading model pipeline  
 
 
 ---
@@ -224,9 +214,26 @@ Fully vectorized NumPy/pandas pipeline 25 k wagers processed in <2 min on a sing
 
 ## Model Performance
 
-| **Market-Signal Model Performance**   | 99       | 15 276 | **+9.75 %**   | +9.62 % … +9.89 %   | 63.2 %   |
-| **Fundamental Model Performance**     | 98       | 20 284 | **+1.62 %**   | +1.50 % … +1.75 %   | 59.4 %   |
-*Window: Seasons 2019 – 2022 walk-forward • Max draw-down ≤ 4.9 u • Half-Kelly staking*
+| Profile                             | Features | Bets    | ROI (½-Kelly) | 95 % CI             | Hit Rate |
+|-------------------------------------|----------|---------|---------------|---------------------|----------|
+| **Market-Signal Model Performance** | 99       | 15,276  | **+9.75 %**   | +9.62 % … +9.89 %   | 63.2 %   |
+| **Fundamental Model Performance**   | 98       | 20,284  | **+1.62 %**   | +1.50 % … +1.75 %   | 59.4 %   |
+
+Additional Market-Signal model metrics:
+
+| Metric              | Value          |
+|---------------------|----------------|
+| ROI (½-Kelly)       | +9.75 %        |
+| Hit Rate            | 63.18 %        |
+| Number of Bets      | 15,276         |
+| Max Drawdown        | 4.32 units     |
+| Sharpe Ratio        | 2.96           |
+| CAGR                | 23.15 %        |
+| Turnover            | 11.50          |
+| Mean CLV            | 0.2131         |
+| 95 % ROI CI         | +9.61 % … +9.89 % |
+
+*Window: Seasons 2019 – 2022 walk-forward, initial training set 2007 – 2018 • Max draw-down ≤ 4.9 units • Half-Kelly staking*
 
 All evaluations use strict walk-forward validation with calendar-aligned splits. No look-ahead bias or post-game sentiment leakage. Every result shown is from out-of-sample evaluation only.
 
